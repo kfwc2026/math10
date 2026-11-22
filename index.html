@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>分數方塊大冒險 ｜ Minecraft 主題</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body{
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  padding:26px 12px;
+  font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC","Helvetica Neue",sans-serif;
+  background-color:#7fc4ee;
+  background-image:linear-gradient(180deg,
+      #7fc4ee 0%,
+      #a9dcf5 28%,
+      #cdecfb 45%,
+      #6aa832 45%,
+      #7dc242 48%,
+      #8b5a2b 48%,
+      #7a4a20 72%,
+      #5e3a19 100%);
+  background-attachment:fixed;
+  background-size:cover;
+  color:#2b2b2b;
+}
+
+/* ===== 主面板 ===== */
+.panel{
+  position:relative; z-index:1;
+  width:min(820px,100%);
+  background:#c6c6c6;
+  border:4px solid;
+  border-color:#ffffff #545454 #545454 #ffffff;
+  box-shadow:0 0 0 4px #373737, 12px 12px 0 rgba(0,0,0,.35);
+}
+
+/* ===== 標題列 ===== */
+.titlebar{
+  position:relative;
+  background:#7a4a20;
+  background-image:repeating-linear-gradient(0deg, rgba(0,0,0,.13) 0 4px, transparent 4px 8px);
+  border-bottom:4px solid #3d2410;
+  padding:14px 16px;
+  text-align:center;
+  color:#fff;
+}
+.titlebar h1{
+  font-size:clamp(17px,4vw,25px);
+  letter-spacing:2px;
+  text-shadow:2px 2px 0 #2a1508;
+}
+.titlebar p{
+  font-size:12px; margin-top:6px; color:#f0d8b8; letter-spacing:1px;
+}
+.teacher-toggle{
+  position:absolute; right:12px; top:12px;
+  font-family:inherit;
+  font-size:12px; font-weight:700;
+  color:#fff;
+  background:#5c5c5c;
+  border:3px solid;
+  border-color:#9e9e9e #2b2b2b #2b2b2b #9e9e9e;
+  padding:5px 10px;
+  cursor:pointer;
+}
+.teacher-toggle:hover{ filter:brightness(1.12); }
+
+/* ===== HUD ===== */
+.hud{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  padding:10px 14px;
+  background:#b0b0b0;
+  border-bottom:2px solid #8b8b8b;
+}
+.hud-item{ font-size:14px; font-weight:700; white-space:nowrap; }
+.hud-item b{ font-size:16px; }
+.student-tag{
+  background:#d9d9d9;
+  border:2px solid #7a7a7a;
+  padding:3px 9px;
+  border-radius:2px;
+}
+.clock{
+  font-size:16px; letter-spacing:1px;
+  background:#3d3d3d; color:#fff;
+  padding:4px 12px;
+  border:3px solid;
+  border-color:#6b6b6b #1a1a1a #1a1a1a #6b6b6b;
+  font-variant-numeric:tabular-nums;
+}
+.clock.urgent{
+  color:#ff6b6b;
+  animation:urgentPulse .8s ease-in-out infinite;
+}
+@keyframes urgentPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.45; } }
+
+.hud-item.gem-bump b{
+  display:inline-block;
+  animation:bump .5s ease;
+}
+@keyframes bump{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(1.7); color:#ffd83d; }
+  100%{ transform:scale(1); }
+}
+
+/* ===== 進度區（三行） ===== */
+.progress-area{
+  padding:8px 14px 10px;
+  background:#a8a8a8;
+  border-bottom:4px solid #8b8b8b;
+  display:flex; flex-direction:column; gap:6px;
+}
+.progress-row{ display:flex; align-items:center; gap:8px; }
+.plabel{
+  flex:none;
+  font-size:11px; font-weight:700; color:#fff;
+  padding:2px 7px;
+  border:2px solid;
+  white-space:nowrap;
+  letter-spacing:1px;
+}
+.plabel.basic{ background:#5ec24a; border-color:#3d8f2e; }
+.plabel.challenge{ background:#e6a817; border-color:#8a5c00; }
+.plabel.consolidate{ background:#4aa8e0; border-color:#2a6a8a; }
+
+.progress{ display:flex; gap:4px; flex-wrap:wrap; }
+.pbar{
+  width:23px; height:23px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; line-height:1;
+  background:#6b6b6b;
+  border:2px solid #4a4a4a;
+  color:#fff;
+}
+.pbar.ok{ background:#5ec24a; border-color:#3d8f2e; }
+.pbar.fail{ background:#c0392b; border-color:#7a1a10; }
+.pbar.active{
+  background:#ffd83d; border-color:#c9a200;
+  animation:pulse 1s ease-in-out infinite;
+}
+.pbar.challenge.active{ background:#ff8c00; border-color:#c96a00; }
+.pbar.consolidate.active{ background:#4aa8e0; border-color:#2a6a8a; }
+@keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+
+/* ===== 內容區 ===== */
+#stage{ padding:18px; }
+
+.card{
+  background:#e8e8e8;
+  border:4px solid;
+  border-color:#ffffff #9a9a9a #9a9a9a #ffffff;
+  padding:16px;
+  animation:fadeIn .25s ease;
+}
+@keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+
+/* 登入表單 */
+.login-box h2{
+  font-size:21px; color:#3d2410; margin-bottom:8px; text-align:center;
+}
+.login-sub{
+  font-size:14px; color:#4a4a4a; text-align:center; margin-bottom:18px; line-height:1.7;
+}
+.login-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:14px; max-width:520px; margin:0 auto 18px;
+}
+.field label{
+  display:block; font-size:14px; font-weight:700; margin-bottom:6px; color:#2b2b2b;
+}
+.field input{
+  width:100%;
+  font-family:inherit; font-size:16px; font-weight:700;
+  padding:10px 12px;
+  background:#fff;
+  color:#222;
+  border:3px solid;
+  border-color:#666 #fff #fff #666;
+}
+.login-err{
+  max-width:520px; margin:0 auto 14px;
+  background:#f8d7d2; border-left:5px solid #c0392b;
+  color:#7a1a10; font-size:13.5px; font-weight:700;
+  padding:8px 12px; text-align:center;
+}
+.login-actions{ text-align:center; }
+
+/* 情境文字 */
+.story{
+  display:flex; gap:10px; align-items:flex-start;
+  background:#d9d9d9;
+  border-left:6px solid #5ec24a;
+  padding:12px 14px;
+  font-size:15.5px;
+  line-height:1.9;
+  margin-bottom:16px;
+}
+.card.challenge .story{ border-left-color:#e6a817; }
+.card.consolidate .story{ border-left-color:#4aa8e0; }
+.badge{
+  flex:none;
+  background:#5ec24a; color:#fff;
+  font-size:11px; font-weight:700;
+  padding:3px 8px;
+  border:2px solid #3d8f2e;
+  letter-spacing:1px;
+  margin-top:4px;
+  white-space:nowrap;
+}
+.card.challenge .badge{
+  background:#e6a817; border-color:#8a5c00;
+}
+.card.consolidate .badge{
+  background:#4aa8e0; border-color:#2a6a8a;
+}
+
+/* 專名號 */
+.pname{
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(0,0,0,.65);
+}
+
+/* 圖片（方塊模型） */
+.visual-wrap{
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  margin-bottom:16px;
+}
+.grid-holder{
+  padding:6px;
+  background:#5a3a1a;
+  border:4px solid #3a2410;
+  box-shadow:inset 0 0 0 2px #7a5a3a;
+  line-height:0;
+}
+.grid{ display:grid; }
+.cell{ border:1px solid rgba(0,0,0,.4); }
+.cell.empty{ background:#5c5c5c; }
+
+/* 第一個分數：綠色 */
+.cell.first{ background:#7dc242; }
+
+/* 第二個分數：在綠色區域內用斜線表示 */
+.cell.hatch{
+  background-image:repeating-linear-gradient(45deg,
+    transparent 0 4px,
+    rgba(255,255,255,.9) 4px 6px);
+}
+
+/* 重疊處＝答案：發光提示 */
+.cell.both{
+  box-shadow:inset 0 0 0 2px #fff6b0;
+  animation:glow 1.6s ease-in-out infinite;
+}
+@keyframes glow{
+  0%,100%{ box-shadow:inset 0 0 0 2px #fff6b0; }
+  50%{ box-shadow:inset 0 0 0 2px #ffffff, 0 0 8px rgba(255,255,255,.85); }
+}
+
+.legend{
+  display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+  font-size:12px; font-weight:700; color:#3a3a3a;
+}
+.legend i{
+  display:inline-block; width:15px; height:15px;
+  vertical-align:-3px; margin-right:4px;
+  border:1px solid #444;
+}
+.sw.first{ background:#7dc242; }
+.sw.hatch{
+  background:#7dc242;
+  background-image:repeating-linear-gradient(45deg,
+    transparent 0 3px,
+    rgba(255,255,255,.95) 3px 5px);
+}
+.visual-note{
+  font-size:12px; color:#555; font-weight:700;
+  text-align:center;
+}
+
+/* 算式 */
+.expr{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  font-size:26px; font-weight:700; color:#2b2b2b;
+  margin-bottom:16px;
+  flex-wrap:wrap;
+}
+.frac{
+  display:inline-flex; flex-direction:column; align-items:center;
+  vertical-align:middle; line-height:1;
+}
+.frac .num{ border-bottom:3px solid currentColor; padding:2px 7px 3px; }
+.frac .den{ padding:3px 7px 2px; }
+.ans-box{
+  display:inline-block; min-width:46px; text-align:center;
+  border:3px dashed #8b8b8b; padding:2px 10px; color:#8b8b8b;
+}
+
+/* 選項按鈕 */
+.options{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(108px,1fr));
+  gap:12px;
+  margin-bottom:14px;
+}
+.opt-btn{
+  font-family:inherit;
+  font-size:26px; font-weight:700;
+  padding:14px 8px;
+  color:#fff;
+  background:#7a7a7a;
+  border:4px solid;
+  border-color:#b9b9b9 #3a3a3a #3a3a3a #b9b9b9;
+  cursor:pointer;
+  text-shadow:2px 2px 0 rgba(0,0,0,.45);
+  display:flex; align-items:center; justify-content:center;
+  transition:background .08s, filter .08s;
+  position:relative;
+}
+.opt-btn:hover:not(.disabled):not(.correct):not(.wrong):not(.simplify){
+  background:#8f9ec4;
+  border-color:#c3cfe8 #2b3550 #2b3550 #c3cfe8;
+}
+.opt-btn:active:not(.disabled){
+  border-color:#3a3a3a #b9b9b9 #b9b9b9 #3a3a3a;
+}
+.opt-btn.correct{
+  background:#4caf50;
+  border-color:#8fe08f #1b5e20 #1b5e20 #8fe08f;
+  animation:pop .32s ease;
+}
+.opt-btn.correct::after{
+  content:"✓";
+  position:absolute; top:-2px; right:2px;
+  font-size:15px; color:#fff;
+  text-shadow:1px 1px 0 #1b5e20;
+}
+.opt-btn.wrong{
+  background:#c0392b;
+  border-color:#f08080 #6b1a10 #6b1a10 #f08080;
+  opacity:.5;
+}
+.opt-btn.wrong::after{
+  content:"✗";
+  position:absolute; top:-2px; right:2px;
+  font-size:15px; color:#fff;
+  text-shadow:1px 1px 0 #6b1a10;
+}
+.opt-btn.simplify{
+  background:#e6a817;
+  border-color:#ffe08a #8a5c00 #8a5c00 #ffe08a;
+  opacity:.9;
+}
+.opt-btn.simplify::after{
+  content:"✗";
+  position:absolute; top:-2px; right:2px;
+  font-size:15px; color:#fff;
+  text-shadow:1px 1px 0 #8a5c00;
+}
+.opt-btn.disabled{ opacity:.38; cursor:default; }
+@keyframes pop{
+  0%{ transform:scale(1); }
+  45%{ transform:scale(1.12); }
+  100%{ transform:scale(1); }
+}
+
+/* 回饋 */
+.feedback{ font-size:14.5px; line-height:1.7; }
+.feedback.ok{
+  background:#d7f0cc;
+  border-left:6px solid #4caf50;
+  padding:12px;
+  display:flex; flex-wrap:wrap; align-items:center;
+  justify-content:space-between; gap:12px;
+  animation:fadeIn .25s ease;
+}
+.feedback.bad{
+  background:#f8d7d2;
+  border-left:6px solid #c0392b;
+  padding:12px;
+  animation:shake .35s ease;
+  font-weight:700;
+  color:#7a1a10;
+}
+.feedback.simplify{
+  background:#fff8dc;
+  border-left:6px solid #e6a817;
+  padding:12px;
+  animation:fadeIn .25s ease;
+  font-weight:700;
+  color:#6b4a00;
+}
+@keyframes shake{
+  0%,100%{ transform:translateX(0); }
+  25%{ transform:translateX(-6px); }
+  75%{ transform:translateX(6px); }
+}
+
+/* 寶石獲得動畫 */
+.gem-pop{
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:18px; font-weight:700; color:#1b7a2e;
+  animation:gemPop .7s ease;
+}
+@keyframes gemPop{
+  0%{ transform:scale(0) rotate(-30deg); opacity:0; }
+  50%{ transform:scale(1.4) rotate(12deg); }
+  100%{ transform:scale(1) rotate(0); opacity:1; }
+}
+.gem-none{
+  color:#8b5a2b; font-size:13px; font-weight:700;
+}
+
+/* Minecraft 按鈕 */
+.mc-btn{
+  font-family:inherit;
+  font-size:15px; font-weight:700;
+  color:#fff;
+  background:#5ec24a;
+  border:4px solid;
+  border-color:#8fe08f #2d6e22 #2d6e22 #8fe08f;
+  padding:10px 20px;
+  cursor:pointer;
+  text-shadow:2px 2px 0 rgba(0,0,0,.35);
+  white-space:nowrap;
+}
+.mc-btn:hover{ filter:brightness(1.12); }
+.mc-btn:active{ border-color:#2d6e22 #8fe08f #8fe08f #2d6e22; }
+.mc-btn.secondary{
+  background:#7a7a7a;
+  border-color:#b9b9b9 #3a3a3a #3a3a3a #b9b9b9;
+}
+.mc-btn.danger{
+  background:#c0392b;
+  border-color:#f08080 #6b1a10 #6b1a10 #f08080;
+}
+
+/* 過渡頁 */
+.bridge{ text-align:center; }
+.bridge-icon{ font-size:56px; line-height:1.2; }
+.bridge h2{
+  font-size:23px; margin:8px 0 12px; color:#3d2410;
+  text-shadow:1px 1px 0 #fff;
+}
+.bridge p{
+  font-size:15px; color:#444; margin-bottom:16px; line-height:1.8;
+}
+
+/* 結果頁 */
+.result{ text-align:center; }
+.result-icon{ font-size:56px; line-height:1.2; }
+.result h2{
+  font-size:24px; margin:6px 0 12px; color:#3d2410;
+  text-shadow:1px 1px 0 #fff;
+}
+.result-score{ font-size:17px; font-weight:700; margin-bottom:10px; }
+.result-score b{ color:#1b7a2b; font-size:22px; }
+.gem-row{ font-size:18px; letter-spacing:1px; margin-bottom:14px; word-break:break-all; line-height:1.5; }
+.result-msg{ font-size:15px; color:#444; margin-bottom:18px; line-height:1.7; }
+.result-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+/* ===== 教師後台 ===== */
+.admin-header{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.admin-header h2{ font-size:20px; color:#3d2410; }
+.admin-toolbar{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin-bottom:14px;
+  background:#dcdcdc; padding:10px 12px; border:2px solid #9a9a9a;
+}
+.admin-toolbar select{
+  font-family:inherit; font-size:14px; font-weight:700;
+  padding:6px 10px; background:#fff; border:2px solid #555;
+}
+.table-wrap{ overflow-x:auto; background:#fff; border:2px solid #7a7a7a; }
+table.admin-table{
+  width:100%; border-collapse:collapse; font-size:13.5px; text-align:left;
+}
+table.admin-table th, table.admin-table td{
+  padding:9px 10px; border-bottom:1px solid #d4d4d4; white-space:nowrap;
+}
+table.admin-table th{
+  background:#5a3a1a; color:#fff; font-weight:700;
+}
+table.admin-table tr:nth-child(even) td{ background:#f6f6f6; }
+.status-pill{
+  display:inline-block; padding:2px 8px; font-size:12px; font-weight:700; border-radius:2px;
+}
+.status-done{ background:#d7f0cc; color:#1b5e20; border:1px solid #4caf50; }
+.status-playing{ background:#fff3c4; color:#7a5200; border:1px solid #e6a817; }
+.status-timeout{ background:#f8d7d2; color:#7a1a10; border:1px solid #c0392b; }
+.empty-tip{ padding:24px; text-align:center; color:#666; font-weight:700; }
+
+@media (max-width:520px){
+  .story{ font-size:14.5px; line-height:1.8; }
+  .expr{ font-size:22px; }
+  .opt-btn{ font-size:22px; padding:12px 6px; }
+  #stage{ padding:12px; }
+  .card{ padding:12px; }
+  .pbar{ width:19px; height:19px; font-size:12px; }
+  .hud-item{ font-size:13px; }
+  .clock{ font-size:14px; padding:3px 8px; }
+  .teacher-toggle{ position:static; margin-top:8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="titlebar">
+    <button class="teacher-toggle" id="teacherToggleBtn">👩‍🏫 教師後台</button>
+    <h1>⛏ 分數方塊大冒險 ⛏</h1>
+    <p>真分數 × 真分數 ｜ 過關 10 題（全程限時 5 分鐘）</p>
+  </div>
+
+  <div class="hud">
+    <span class="hud-item student-tag" id="studentTag">學生：未登入</span>
+    <span class="hud-item" id="stageInfo">等待登入</span>
+    <span class="hud-item clock" id="clock">⏰ 05:00</span>
+    <span class="hud-item" id="gemCounter">💎 <b id="gems">0</b></span>
+  </div>
+
+  <div class="progress-area">
+    <div class="progress-row">
+      <span class="plabel basic">過關</span>
+      <div class="progress" id="progressBasic"></div>
+    </div>
+    <div class="progress-row" id="rowChallenge" style="display:none;">
+      <span class="plabel challenge">挑戰</span>
+      <div class="progress" id="progressChallenge"></div>
+    </div>
+    <div class="progress-row" id="rowConsolidate" style="display:none;">
+      <span class="plabel consolidate">跟進練習</span>
+      <div class="progress" id="progressConsolidate"></div>
+    </div>
+  </div>
+
+  <main id="stage"></main>
+</div>
+
+<script>
+/* ============================================================
+   題庫
+   ============================================================ */
+const BASIC_QUESTIONS = [
+  {a:1,b:2,c:1,d:2, story:"<span class='pname'>小明</span>把蛋糕的 1/2 塗上朱古力醬，再把塗醬部分的 1/2 放上草莓。草莓部分佔整個蛋糕的幾分之幾？", options:["1/4","2/8","1/2","1/8"], answer:"1/4"},
+  {a:1,b:2,c:1,d:3, story:"<span class='pname'>小麗</span>有一排朱古力，1/2 是黑朱古力。黑朱古力當中有 1/3 加了果仁。加了果仁的黑朱古力佔整排的幾分之幾？", options:["1/6","2/12","1/5","2/5"], answer:"1/6"},
+  {a:2,b:3,c:1,d:2, story:"<span class='pname'>恩恩</span>把一張手工紙的 2/3 塗上顏色，再把塗色部分的 1/2 剪下來。剪下來的部分佔整張紙的幾分之幾？", options:["1/3","2/6","2/5","1/6"], answer:"1/3"},
+  {a:3,b:4,c:2,d:3, story:"<span class='pname'>嘉朗</span>有一條繩子，用去 3/4，其中 2/3 用來綁禮物。綁禮物用了整條繩子的幾分之幾？", options:["1/2","3/6","3/7","2/3"], answer:"1/2"},
+  {a:3,b:5,c:2,d:3, story:"公園的草地，<span class='pname'>晴晴</span>發現 3/5 種了花，其中 2/3 是紅花。紅花佔整塊草地的幾分之幾？", options:["2/5","4/10","5/8","3/5"], answer:"2/5"},
+  {a:3,b:4,c:2,d:5, story:"一瓶牛奶，<span class='pname'>俊朗</span>用了 3/4 做蛋糕，其中 2/5 用來做麵包。做麵包用的牛奶佔整瓶的幾分之幾？", options:["3/10","6/20","5/9","2/5"], answer:"3/10"},
+  {a:4,b:5,c:5,d:6, story:"一個薄餅，<span class='pname'>仲謙</span>把 4/5 塗上番茄醬，其中 5/6 加了芝士。加了芝士的部分佔整個薄餅的幾分之幾？", options:["2/3","4/6","3/4","9/11"], answer:"2/3"},
+  {a:5,b:6,c:3,d:10, story:"一盒朱古力，<span class='pname'>芷柔</span>吃了 5/6，其中 3/10 是白朱古力。白朱古力佔整盒的幾分之幾？", options:["1/4","2/8","1/2","2/5"], answer:"1/4"},
+  {a:9,b:10,c:2,d:3, story:"一瓶牛奶，<span class='pname'>浩庭</span>喝了 9/10，其中 2/3 是朱古力味。朱古力味牛奶佔整瓶的幾分之幾？", options:["3/5","6/10","11/13","2/5"], answer:"3/5"},
+  {a:7,b:8,c:6,d:7, story:"一條繩子，<span class='pname'>小明</span>染了 7/8 的顏色，其中 6/7 是藍色。藍色佔整條繩子的幾分之幾？", options:["3/4","6/8","13/15","5/8"], answer:"3/4"}
+];
+
+const CHALLENGE_QUESTIONS = [
+  {a:5,b:6,c:3,d:10, story:"<span class='pname'>小麗</span>有一盒果汁，喝了 5/6，其中 3/10 是橙汁。橙汁佔整盒的幾分之幾？", options:["1/4","15/60","1/3","3/10"], answer:"1/4"},
+  {a:3,b:8,c:4,d:9, story:"<span class='pname'>嘉朗</span>把一張手工紙的 3/8 塗上黃色，再把黃色部分的 4/9 貼上貼紙。貼紙部分佔整張紙的幾分之幾？", options:["1/6","12/72","1/5","2/9"], answer:"1/6"},
+  {a:9,b:10,c:5,d:12, story:"<span class='pname'>恩恩</span>把蛋糕的 9/10 塗上忌廉，其中 5/12 加了士多啤梨。士多啤梨部分佔整個蛋糕的幾分之幾？", options:["3/8","45/120","1/3","5/12"], answer:"3/8"},
+  {a:8,b:9,c:3,d:4, story:"一條繩子，<span class='pname'>俊朗</span>用去 8/9，其中 3/4 用來綁書本。綁書本用了整條繩子的幾分之幾？", options:["2/3","24/36","1/2","3/9"], answer:"2/3"},
+  {a:7,b:10,c:5,d:14, story:"<span class='pname'>晴晴</span>把薄餅的 7/10 塗上番茄醬，其中 5/14 加了蘑菇。蘑菇部分佔整個薄餅的幾分之幾？", options:["1/4","35/140","1/2","5/14"], answer:"1/4"},
+  {a:6,b:7,c:7,d:9, story:"<span class='pname'>仲謙</span>有一塊草地，6/7 長了草，其中 7/9 是綠草。綠草佔整塊草地的幾分之幾？", options:["2/3","42/63","1/3","7/9"], answer:"2/3"},
+  {a:10,b:11,c:11,d:12, story:"<span class='pname'>芷柔</span>有一瓶牛奶，用了 10/11，其中 11/12 做芝士。做芝士用的牛奶佔整瓶的幾分之幾？", options:["5/6","110/132","11/12","10/12"], answer:"5/6"},
+  {a:9,b:12,c:8,d:15, story:"<span class='pname'>浩庭</span>把一張手工紙的 9/12 塗上紅色，其中 8/15 剪成心形。心形部分佔整張紙的幾分之幾？", options:["2/5","72/180","1/2","3/5"], answer:"2/5"},
+  {a:5,b:8,c:8,d:15, story:"<span class='pname'>小明</span>有一條繩子，染了 5/8，其中 8/15 是紅色。紅色部分佔整條繩子的幾分之幾？", options:["1/3","40/120","1/2","5/15"], answer:"1/3"},
+  {a:12,b:15,c:5,d:8, story:"<span class='pname'>小麗</span>把薄餅的 12/15 塗上芝士，其中 5/8 加了火腿。火腿部分佔整個薄餅的幾分之幾？", options:["1/2","60/120","3/8","2/3"], answer:"1/2"}
+];
+
+const CONSOLIDATE_QUESTIONS = [
+  {a:1,b:2,c:1,d:2, story:"<span class='pname'>小明</span>吃了蛋糕的 1/2，其中 1/2 是朱古力味。朱古力味佔整個蛋糕的幾分之幾？", options:["1/4","1/2","2/4","1/8"], answer:"1/4"},
+  {a:1,b:2,c:1,d:3, story:"<span class='pname'>小麗</span>有一排朱古力，1/2 是黑朱古力，其中 1/3 加了果仁。加了果仁的佔整排的幾分之幾？", options:["1/6","1/5","2/6","1/3"], answer:"1/6"},
+  {a:1,b:3,c:1,d:3, story:"<span class='pname'>恩恩</span>把手工紙的 1/3 塗上顏色，其中 1/3 剪下來。剪下來的佔整張紙的幾分之幾？", options:["1/9","1/6","2/9","1/3"], answer:"1/9"},
+  {a:1,b:4,c:1,d:2, story:"一瓶牛奶，<span class='pname'>俊朗</span>喝了 1/4，其中 1/2 是朱古力味。朱古力味佔整瓶的幾分之幾？", options:["1/8","1/6","2/8","1/4"], answer:"1/8"},
+  {a:2,b:3,c:1,d:2, story:"<span class='pname'>晴晴</span>把薄餅的 2/3 塗上番茄醬，其中 1/2 加了芝士。加了芝士的佔整個薄餅的幾分之幾？", options:["1/3","2/6","2/5","1/2"], answer:"1/3"},
+  {a:1,b:2,c:2,d:5, story:"一條繩子，<span class='pname'>仲謙</span>用了 1/2，其中 2/5 用來綁禮物。綁禮物用了整條繩子的幾分之幾？", options:["1/5","2/10","2/7","1/3"], answer:"1/5"},
+  {a:1,b:3,c:3,d:4, story:"一塊草地，<span class='pname'>芷柔</span>發現 1/3 種了花，其中 3/4 是紅花。紅花佔整塊草地的幾分之幾？", options:["1/4","3/12","1/2","3/7"], answer:"1/4"},
+  {a:2,b:3,c:3,d:5, story:"<span class='pname'>浩庭</span>把蛋糕的 2/3 塗上忌廉，其中 3/5 加了士多啤梨。士多啤梨佔整個蛋糕的幾分之幾？", options:["2/5","6/15","1/2","3/5"], answer:"2/5"},
+  {a:3,b:4,c:4,d:5, story:"<span class='pname'>小明</span>有一盒朱古力，吃了 3/4，其中 4/5 是黑朱古力。黑朱古力佔整盒的幾分之幾？", options:["3/5","12/20","1/2","4/5"], answer:"3/5"},
+  {a:1,b:5,c:5,d:6, story:"<span class='pname'>小麗</span>把薄餅的 1/5 塗上芝士，其中 5/6 加了火腿。火腿佔整個薄餅的幾分之幾？", options:["1/6","5/30","1/3","5/11"], answer:"1/6"}
+];
+
+const BASIC_COUNT = BASIC_QUESTIONS.length;
+const CHALLENGE_COUNT = CHALLENGE_QUESTIONS.length;
+const CONSOLIDATE_COUNT = CONSOLIDATE_QUESTIONS.length;
+const TOTAL_TIME = 300;
+const STORAGE_KEY = 'mc_fraction_adventure_records_v1';
+
+/* ================= 狀態 ================= */
+let mode = 'login';           // 'login' | 'basic' | 'challenge' | 'consolidate' | 'result'
+let prevModeBeforeAdmin = 'login';
+let adminOpen = false;
+let studentClass = '';
+let studentSeat = '';
+let currentRecordId = null;
+
+let idx = 0;
+let gems = 0;
+let solved = false;
+let firstTryFailed = false;
+let gameOver = false;
+
+let timeLeft = TOTAL_TIME;
+let timerId = null;
+
+let basicResults = Array(BASIC_COUNT).fill(null);
+let challengeResults = Array(CHALLENGE_COUNT).fill(null);
+let consolidateResults = Array(CONSOLIDATE_COUNT).fill(null);
+let currentCorrectCount = 0;
+let currentAttemptCount = 0;
+
+/* ================= DOM ================= */
+const stage           = document.getElementById('stage');
+const progressB       = document.getElementById('progressBasic');
+const progressC       = document.getElementById('progressChallenge');
+const progressCon     = document.getElementById('progressConsolidate');
+const rowChallenge    = document.getElementById('rowChallenge');
+const rowConsolidate  = document.getElementById('rowConsolidate');
+const stageInfo       = document.getElementById('stageInfo');
+const gemsEl          = document.getElementById('gems');
+const gemCounter      = document.getElementById('gemCounter');
+const clockEl         = document.getElementById('clock');
+const studentTag      = document.getElementById('studentTag');
+const teacherToggleBtn= document.getElementById('teacherToggleBtn');
+
+/* ================= 小工具 ================= */
+function fracEl(n, d){
+  return `<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+}
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function modeLabel(m){
+  if (m === 'basic') return '過關題';
+  if (m === 'challenge') return '挑戰題';
+  if (m === 'consolidate') return '跟進練習';
+  if (m === 'result') return '已完成';
+  return '未開始';
+}
+
+/* ================= 後台資料儲存（localStorage） ================= */
+function loadRecords(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+function saveRecords(list){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {}
+}
+function computeStats(){
+  const basicOk = basicResults.filter(r => r === 'ok').length;
+  const challengeOk = challengeResults.filter(r => r === 'ok').length;
+  const consolidateOk = consolidateResults.filter(r => r === 'ok').length;
+  const totalCorrect = basicOk + challengeOk + consolidateOk;
+  const answeredCount = basicResults.filter(r => r !== null).length
+                      + challengeResults.filter(r => r !== null).length
+                      + consolidateResults.filter(r => r !== null).length;
+  return { totalCorrect, answeredCount, basicOk, challengeOk, consolidateOk };
+}
+function upsertCurrentRecord(statusText){
+  if (!studentClass || !studentSeat || !currentRecordId) return;
+  const list = loadRecords();
+  const { totalCorrect, answeredCount } = computeStats();
+  const rec = {
+    id: currentRecordId,
+    className: studentClass,
+    seatNo: studentSeat,
+    stage: modeLabel(mode),
+    answeredCount,
+    correctCount: totalCorrect,
+    attemptCount: currentAttemptCount,
+    gems,
+    status: statusText || (gameOver ? '已結束' : '作答中'),
+    updatedAt: new Date().toLocaleString('zh-Hant', { hour12:false })
+  };
+  const i = list.findIndex(item => item.id === currentRecordId);
+  if (i >= 0) list[i] = rec;
+  else list.unshift(rec);
+  saveRecords(list);
+}
+
+/* ================= 計時器（全程共用 5 分鐘） ================= */
+function updateClock(){
+  const m = String(Math.floor(Math.max(timeLeft,0) / 60)).padStart(2,'0');
+  const s = String(Math.max(timeLeft,0) % 60).padStart(2,'0');
+  clockEl.textContent = `⏰ ${m}:${s}`;
+  if (timeLeft <= 30) clockEl.classList.add('urgent');
+  else clockEl.classList.remove('urgent');
+}
+function startTimer(){
+  clearInterval(timerId);
+  timeLeft = TOTAL_TIME;
+  updateClock();
+  timerId = setInterval(() => {
+    if (gameOver || mode === 'login' || adminOpen) return;
+    timeLeft--;
+    updateClock();
+    if (timeLeft <= 0){ clearInterval(timerId); timeUp(); }
+  }, 1000);
+}
+function timeUp(){
+  if (gameOver) return;
+  gameOver = true;
+  clearInterval(timerId);
+  upsertCurrentRecord('時間到');
+  if (!adminOpen) renderResult(true);
+}
+
+/* ================= 進度條 ================= */
+function buildProgress(){
+  progressB.innerHTML = '';
+  progressC.innerHTML = '';
+  progressCon.innerHTML = '';
+  for (let i = 0; i < BASIC_COUNT; i++){
+    const d = document.createElement('div'); d.className = 'pbar basic'; progressB.appendChild(d);
+  }
+  for (let i = 0; i < CHALLENGE_COUNT; i++){
+    const d = document.createElement('div'); d.className = 'pbar challenge'; progressC.appendChild(d);
+  }
+  for (let i = 0; i < CONSOLIDATE_COUNT; i++){
+    const d = document.createElement('div'); d.className = 'pbar consolidate'; progressCon.appendChild(d);
+  }
+  updateProgress();
+}
+
+function updateRow(container, results, activeIdx, base){
+  [...container.children].forEach((el, i) => {
+    el.className = 'pbar ' + base;
+    el.textContent = '';
+    if (results[i] === 'ok'){ el.classList.add('ok'); el.textContent = '✓'; }
+    else if (results[i] === 'fail'){ el.classList.add('fail'); el.textContent = '✗'; }
+    else if (i === activeIdx){ el.classList.add('active'); }
+  });
+}
+
+function updateProgress(){
+  const activeBasic = (!gameOver && mode === 'basic') ? idx : -1;
+  const activeChallenge = (!gameOver && mode === 'challenge') ? idx : -1;
+  const activeConsolidate = (!gameOver && mode === 'consolidate') ? idx : -1;
+  updateRow(progressB, basicResults, activeBasic, 'basic');
+  updateRow(progressC, challengeResults, activeChallenge, 'challenge');
+  updateRow(progressCon, consolidateResults, activeConsolidate, 'consolidate');
+}
+
+/* ================= 學生登入頁 ================= */
+function renderLogin(errMsg){
+  mode = 'login';
+  gameOver = false;
+  clearInterval(timerId);
+  timeLeft = TOTAL_TIME;
+  updateClock();
+  stageInfo.innerHTML = '等待登入';
+  studentTag.textContent = '學生：未登入';
+  rowChallenge.style.display = 'none';
+  rowConsolidate.style.display = 'none';
+  buildProgress();
+
+  stage.innerHTML = `
+    <div class="card login-box">
+      <h2>🎒 學生登入</h2>
+      <p class="login-sub">請輸入你的<strong>班別</strong>及<strong>班號</strong>開始冒險（限時 5 分鐘）。<br>作答紀錄與答對題數會自動記錄供老師查閱。</p>
+      ${errMsg ? `<div class="login-err">${errMsg}</div>` : ''}
+      <div class="login-grid">
+        <div class="field">
+          <label for="classInput">班別（例如：5A）</label>
+          <input id="classInput" type="text" maxlength="10" placeholder="例如：5A" value="${studentClass}">
+        </div>
+        <div class="field">
+          <label for="seatInput">班號（例如：12）</label>
+          <input id="seatInput" type="text" maxlength="5" placeholder="例如：12" value="${studentSeat}">
+        </div>
+      </div>
+      <div class="login-actions">
+        <button class="mc-btn" id="startLoginBtn">進入遊戲 ▶</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('startLoginBtn').addEventListener('click', () => {
+    const cls = document.getElementById('classInput').value.trim().toUpperCase();
+    const seat = document.getElementById('seatInput').value.trim();
+    if (!cls || !seat){
+      renderLogin('請同時填寫班別及班號！');
+      return;
+    }
+    studentClass = cls;
+    studentSeat = seat;
+    beginNewAttempt();
+  });
+}
+
+function beginNewAttempt(){
+  mode = 'basic';
+  idx = 0;
+  gems = 0;
+  solved = false;
+  firstTryFailed = false;
+  gameOver = false;
+  currentAttemptCount = 0;
+  basicResults = Array(BASIC_COUNT).fill(null);
+  challengeResults = Array(CHALLENGE_COUNT).fill(null);
+  consolidateResults = Array(CONSOLIDATE_COUNT).fill(null);
+  currentRecordId = `${Date.now()}_${studentClass}_${studentSeat}`;
+
+  gemsEl.textContent = 0;
+  studentTag.textContent = `學生：${studentClass}（${studentSeat}號）`;
+  rowChallenge.style.display = 'none';
+  rowConsolidate.style.display = 'none';
+
+  buildProgress();
+  upsertCurrentRecord('作答中');
+  startTimer();
+  renderQuestion();
+}
+
+/* ================= 取得目前題庫 ================= */
+function getCurrentQuestions(){
+  if (mode === 'basic') return BASIC_QUESTIONS;
+  if (mode === 'challenge') return CHALLENGE_QUESTIONS;
+  if (mode === 'consolidate') return CONSOLIDATE_QUESTIONS;
+  return [];
+}
+function getCurrentResults(){
+  if (mode === 'basic') return basicResults;
+  if (mode === 'challenge') return challengeResults;
+  if (mode === 'consolidate') return consolidateResults;
+  return [];
+}
+function getCurrentCount(){
+  if (mode === 'basic') return BASIC_COUNT;
+  if (mode === 'challenge') return CHALLENGE_COUNT;
+  if (mode === 'consolidate') return CONSOLIDATE_COUNT;
+  return 0;
+}
+
+/* ================= 方塊圖 ================= */
+function renderGrid(q){
+  const holder = document.getElementById('gridHolder');
+  const cols = q.b;
+  const rows = q.d;
+  const cell = Math.floor(Math.min(300 / cols, 210 / rows, 62));
+  const size = Math.max(cell, 8);
+
+  const g = document.createElement('div');
+  g.className = 'grid';
+  g.style.gridTemplateColumns = `repeat(${cols}, ${size}px)`;
+  g.style.gridTemplateRows    = `repeat(${rows}, ${size}px)`;
+
+  for (let r = 0; r < rows; r++){
+    for (let c = 0; c < cols; c++){
+      const el = document.createElement('div');
+      el.className = 'cell';
+      const inFirst  = c < q.a;
+      const inSecond = r < q.c;
+      if (inFirst){
+        el.classList.add('first');
+        if (inSecond) el.classList.add('hatch', 'both');
+      } else {
+        el.classList.add('empty');
+      }
+      g.appendChild(el);
+    }
+  }
+  holder.appendChild(g);
+}
+
+/* ================= 出題 ================= */
+function renderQuestion(){
+  const qs = getCurrentQuestions();
+  const q = qs[idx];
+  solved = false;
+  firstTryFailed = false;
+
+  if (mode === 'basic') stageInfo.innerHTML = `過關 <b>${idx+1}</b>/${BASIC_COUNT}`;
+  else if (mode === 'challenge') stageInfo.innerHTML = `挑戰 <b>${idx+1}</b>/${CHALLENGE_COUNT}`;
+  else if (mode === 'consolidate') stageInfo.innerHTML = `跟進練習 <b>${idx+1}</b>/${CONSOLIDATE_COUNT}`;
+
+  updateProgress();
+
+  const isBasic = mode === 'basic';
+  const isConsolidate = mode === 'consolidate';
+  const cardClass = isBasic ? '' : (isConsolidate ? 'consolidate' : 'challenge');
+  const badgeText = isBasic ? '情境題' : (isConsolidate ? '跟進練習' : '挑戰題');
+
+  stage.innerHTML = `
+    <div class="card ${cardClass}">
+      <div class="story">
+        <span class="badge">${badgeText}</span>
+        <p>${q.story}</p>
+      </div>
+      <div class="visual-wrap">
+        <div class="grid-holder" id="gridHolder"></div>
+        <div class="legend">
+          <span><i class="sw first"></i>第一個分數（綠色）</span>
+          <span><i class="sw hatch"></i>第二個分數（斜線）</span>
+        </div>
+        <div class="visual-note">綠色＋斜線重疊的格子就是答案</div>
+      </div>
+      <div class="expr">
+        ${fracEl(q.a, q.b)}
+        <span>×</span>
+        ${fracEl(q.c, q.d)}
+        <span>=</span>
+        <span class="ans-box">?</span>
+      </div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  `;
+
+  renderGrid(q);
+  renderOptions(q);
+}
+
+function renderOptions(q){
+  const box = document.getElementById('options');
+  shuffle(q.options).forEach(opt => {
+    const [n, d] = opt.split('/').map(Number);
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = fracEl(n, d);
+    btn.addEventListener('click', () => handleAnswer(btn, opt, q));
+    box.appendChild(btn);
+  });
+}
+
+/* ================= 作答 ================= */
+function handleAnswer(btn, opt, q){
+  if (solved || btn.disabled || gameOver) return;
+
+  currentAttemptCount++;
+  const resultsArr = getCurrentResults();
+
+  /* 答對 */
+  if (opt === q.answer){
+    solved = true;
+    btn.classList.add('correct');
+    document.querySelectorAll('.opt-btn').forEach(b => {
+      if (b !== btn) b.classList.add('disabled');
+    });
+
+    if (mode === 'consolidate'){
+      /* 跟進練習：答對即給寶石 */
+      gems++;
+      gemsEl.textContent = gems;
+      bumpGem();
+      resultsArr[idx] = 'ok';
+      updateProgress();
+      upsertCurrentRecord('作答中');
+      showFeedback('correct', q, true);
+    } else {
+      /* 過關 / 挑戰題：首次答對才給寶石 */
+      const earned = !firstTryFailed;
+      resultsArr[idx] = earned ? 'ok' : 'fail';
+      if (earned){
+        gems++;
+        gemsEl.textContent = gems;
+        bumpGem();
+      }
+      updateProgress();
+      upsertCurrentRecord('作答中');
+      showFeedback('correct', q, earned);
+    }
+    return;
+  }
+
+  /* 數值正確但不是最簡分數 */
+  const [n, d]   = opt.split('/').map(Number);
+  const [an, ad] = q.answer.split('/').map(Number);
+  if (n * ad === an * d){
+    btn.classList.add('simplify');
+    btn.disabled = true;
+    if (mode !== 'consolidate') firstTryFailed = true;
+    upsertCurrentRecord('作答中');
+    showFeedback('simplify', q);
+    return;
+  }
+
+  /* 答錯 */
+  btn.classList.add('wrong');
+  btn.disabled = true;
+  if (mode !== 'consolidate') firstTryFailed = true;
+  upsertCurrentRecord('作答中');
+  showFeedback('wrong', q);
+}
+
+/* ================= 寶石彈跳 ================= */
+function bumpGem(){
+  gemCounter.classList.remove('gem-bump');
+  void gemCounter.offsetWidth;
+  gemCounter.classList.add('gem-bump');
+  setTimeout(() => gemCounter.classList.remove('gem-bump'), 600);
+}
+
+/* ================= 回饋 ================= */
+function showFeedback(type, q, earned){
+  const fb = document.getElementById('feedback');
+  const isChallenge = mode === 'challenge';
+  const isConsolidate = mode === 'consolidate';
+
+  if (type === 'correct'){
+    fb.className = 'feedback ok';
+    let gemPart = '';
+    if (earned){
+      gemPart = `<span class="gem-pop">💎 +1 寶石</span>`;
+    } else {
+      gemPart = `<span class="gem-none">（本題之前答錯過，未獲得寶石）</span>`;
+    }
+    fb.innerHTML = `<span>✔ 答對了！綠色加斜線的重疊方塊就是答案。<br>${gemPart}</span>`;
+
+    const next = document.createElement('button');
+    next.className = 'mc-btn';
+    if (mode === 'basic' && idx === BASIC_COUNT - 1){
+      next.textContent = '查看結果 ▶';
+    } else if ((mode === 'challenge' && idx === CHALLENGE_COUNT - 1) ||
+               (mode === 'consolidate' && idx === CONSOLIDATE_COUNT - 1)){
+      next.textContent = '查看結果 🏆';
+    } else {
+      next.textContent = '下一關 ▶';
+    }
+
+    next.addEventListener('click', () => {
+      if (gameOver) return;
+      if (mode === 'basic' && idx === BASIC_COUNT - 1){
+        const okCount = basicResults.filter(r => r === 'ok').length;
+        if (okCount < 6){
+          showBridge('consolidate');
+        } else {
+          showBridge('challenge');
+        }
+        return;
+      }
+      if (idx === getCurrentCount() - 1){
+        renderResult(false);
+        return;
+      }
+      idx++;
+      renderQuestion();
+    });
+    fb.appendChild(next);
+    return;
+  }
+
+  if (type === 'simplify'){
+    fb.className = 'feedback simplify';
+    fb.innerHTML = `⚠ 這個分數的數值正確，但還不是最簡分數。<br>請將分數約至最簡分數。`;
+    return;
+  }
+
+  fb.className = 'feedback bad';
+  if (isConsolidate){
+    fb.innerHTML = `✘ 再試一次！提示：分子乘以分子，分母乘以分母。`;
+  } else if (isChallenge){
+    fb.innerHTML = `✘ 答錯了！提示：分子乘以分子，分母乘以分母。<br><span style="font-weight:400;color:#7a1a10;">挑戰題小提示：可以先交叉約分再相乘。</span><br><span style="font-weight:400;">（本題已失去獲得寶石的機會）</span>`;
+  } else {
+    fb.innerHTML = `✘ 答錯了！提示：分子乘以分子，分母乘以分母。<br><span style="font-weight:400;">（本題已失去獲得寶石的機會）</span>`;
+  }
+}
+
+/* ================= 過渡頁（不重置 5 分鐘計時器） ================= */
+function showBridge(nextMode){
+  if (nextMode === 'challenge'){
+    stageInfo.innerHTML = `挑戰 <b>1</b>/${CHALLENGE_COUNT}`;
+    rowChallenge.style.display = 'flex';
+    rowConsolidate.style.display = 'none';
+    upsertCurrentRecord('作答中');
+    stage.innerHTML = `
+      <div class="card bridge">
+        <div class="bridge-icon">🔥</div>
+        <h2>過關題完成！</h2>
+        <p>你已經完成 10 道過關題。<br>接下來的 10 道挑戰題難度更高，<br>需要先交叉約分再相乘，準備好了嗎？</p>
+        <button class="mc-btn" id="startPartBtn">開始挑戰 ▶</button>
+      </div>
+    `;
+    document.getElementById('startPartBtn').addEventListener('click', () => {
+      if (gameOver) return;
+      mode = 'challenge';
+      idx = 0;
+      renderQuestion();
+    });
+  } else {
+    stageInfo.innerHTML = `跟進練習 <b>1</b>/${CONSOLIDATE_COUNT}`;
+    rowConsolidate.style.display = 'flex';
+    rowChallenge.style.display = 'none';
+    upsertCurrentRecord('作答中');
+    stage.innerHTML = `
+      <div class="card bridge">
+        <div class="bridge-icon">📘</div>
+        <h2>先做跟進練習！</h2>
+        <p>過關題中首次答對少於 6 題，<br>我們先做 10 道較簡單的跟進練習，<br>數字更簡單、文字更短，<br>答對都可以獲得寶石！</p>
+        <button class="mc-btn" id="startPartBtn">開始跟進練習 ▶</button>
+      </div>
+    `;
+    document.getElementById('startPartBtn').addEventListener('click', () => {
+      if (gameOver) return;
+      mode = 'consolidate';
+      idx = 0;
+      renderQuestion();
+    });
+  }
+}
+
+/* ================= 結果頁 ================= */
+function renderResult(fromTimeUp){
+  gameOver = true;
+  clearInterval(timerId);
+  mode = 'result';
+  updateProgress();
+
+  const { totalCorrect, answeredCount } = computeStats();
+  upsertCurrentRecord(fromTimeUp ? '時間到' : '已完成');
+
+  stageInfo.innerHTML = `完成 <b>${answeredCount}</b> 題`;
+
+  let msg;
+  if (fromTimeUp){
+    msg = `⏰ 5 分鐘時間到！你在限時內完成了 ${answeredCount} 題（答對 ${totalCorrect} 題），最後共獲得 <b>${gems}</b> 顆寶石！`;
+  } else if (gems === 20){
+    msg = '完美通關！你是真正的分數大師！';
+  } else if (gems >= 16){
+    msg = '太厲害了！你已經很會算分數乘法了。';
+  } else if (gems >= 10){
+    msg = '不錯喔！再練習一下會更熟練。';
+  } else {
+    msg = '再挑戰一次，你一定可以做到的！';
+  }
+
+  const gemRow = '💎'.repeat(gems) + '🪨'.repeat(Math.max(20 - gems, 0));
+
+  stage.innerHTML = `
+    <div class="card result">
+      <div class="result-icon">${fromTimeUp ? '⏰' : '🏆'}</div>
+      <h2>${fromTimeUp ? '時間到！' : '恭喜完成！'}</h2>
+      <p class="result-score">答對題數：<b>${totalCorrect}</b> 題　｜　最後獲得寶石：<b>${gems}</b> 顆</p>
+      <div class="gem-row">${gemRow}</div>
+      <p class="result-msg">${msg}</p>
+      <div class="result-actions">
+        <button class="mc-btn" id="restartBtn">再玩一次 🔁</button>
+        <button class="mc-btn secondary" id="switchStudentBtn">切換班別／班號</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('restartBtn').addEventListener('click', beginNewAttempt);
+  document.getElementById('switchStudentBtn').addEventListener('click', () => {
+    studentClass = '';
+    studentSeat = '';
+    currentRecordId = null;
+    renderLogin('');
+  });
+}
+
+/* ================= 教師後台 ================= */
+function renderTeacherAdmin(selectedClass = 'ALL'){
+  const all = loadRecords();
+  const classes = [...new Set(all.map(r => r.className))].sort();
+  const filtered = selectedClass === 'ALL' ? all : all.filter(r => r.className === selectedClass);
+
+  const rowsHtml = filtered.length === 0
+    ? `<tr><td colspan="8" class="empty-tip">目前尚無學生作答紀錄。</td></tr>`
+    : filtered.map(r => {
+        const pillClass = r.status === '已完成' ? 'status-done'
+                        : r.status === '時間到' ? 'status-timeout'
+                        : 'status-playing';
+        return `
+          <tr>
+            <td><strong>${r.className}</strong></td>
+            <td><strong>${r.seatNo}</strong></td>
+            <td>${r.stage}</td>
+            <td>${r.answeredCount} 題</td>
+            <td><strong>${r.correctCount}</strong> 題</td>
+            <td>💎 ${r.gems}</td>
+            <td><span class="status-pill ${pillClass}">${r.status}</span></td>
+            <td>${r.updatedAt}</td>
+          </tr>
+        `;
+      }).join('');
+
+  stage.innerHTML = `
+    <div class="card">
+      <div class="admin-header">
+        <h2>👩‍🏫 教師後台 — 學生作答紀錄</h2>
+        <button class="mc-btn secondary" id="backFromAdminBtn">返回遊戲 ◀</button>
+      </div>
+      <div class="admin-toolbar">
+        <label for="classFilter">篩選班別：</label>
+        <select id="classFilter">
+          <option value="ALL" ${selectedClass === 'ALL' ? 'selected' : ''}>全部班別（${all.length} 筆）</option>
+          ${classes.map(c => `<option value="${c}" ${selectedClass === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+        <button class="mc-btn" id="refreshAdminBtn" style="padding:6px 14px;font-size:13px;">重新整理</button>
+        <button class="mc-btn danger" id="clearRecordsBtn" style="padding:6px 14px;font-size:13px;">清除紀錄</button>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>班別</th>
+              <th>班號</th>
+              <th>目前階段</th>
+              <th>已作答</th>
+              <th>答對題數</th>
+              <th>寶石數</th>
+              <th>狀態</th>
+              <th>更新時間</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('classFilter').addEventListener('change', (e) => {
+    renderTeacherAdmin(e.target.value);
+  });
+  document.getElementById('refreshAdminBtn').addEventListener('click', () => {
+    const cur = document.getElementById('classFilter').value;
+    renderTeacherAdmin(cur);
+  });
+  document.getElementById('clearRecordsBtn').addEventListener('click', () => {
+    if (confirm('確定要清除所有學生作答紀錄嗎？')){
+      saveRecords([]);
+      renderTeacherAdmin('ALL');
+    }
+  });
+  document.getElementById('backFromAdminBtn').addEventListener('click', () => {
+    closeTeacherAdmin();
+  });
+}
+
+function openTeacherAdmin(){
+  if (adminOpen) return;
+  prevModeBeforeAdmin = mode;
+  adminOpen = true;
+  teacherToggleBtn.textContent = '◀ 返回遊戲';
+  if (studentClass && studentSeat && !gameOver && mode !== 'login'){
+    upsertCurrentRecord('作答中');
+  }
+  renderTeacherAdmin('ALL');
+}
+
+function closeTeacherAdmin(){
+  if (!adminOpen) return;
+  adminOpen = false;
+  teacherToggleBtn.textContent = '👩‍🏫 教師後台';
+  if (prevModeBeforeAdmin === 'login'){
+    renderLogin('');
+  } else if (prevModeBeforeAdmin === 'result' || gameOver){
+    renderResult(timeLeft <= 0);
+  } else {
+    renderQuestion();
+  }
+}
+
+teacherToggleBtn.addEventListener('click', () => {
+  if (adminOpen) closeTeacherAdmin();
+  else openTeacherAdmin();
+});
+
+/* ================= 啟動 ================= */
+renderLogin('');
+</script>
+</body>
+</html>
